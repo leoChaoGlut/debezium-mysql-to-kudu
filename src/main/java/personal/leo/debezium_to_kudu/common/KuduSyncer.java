@@ -1,4 +1,4 @@
-package personal.leo.debezium_to_kudu.worker;
+package personal.leo.debezium_to_kudu.common;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -8,10 +8,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.kudu.ColumnSchema;
 import org.apache.kudu.Type;
 import org.apache.kudu.client.*;
-import personal.leo.debezium_to_kudu.worker.constants.OperationType;
-import personal.leo.debezium_to_kudu.worker.constants.PayloadKeys;
-import personal.leo.debezium_to_kudu.worker.constants.PropDefaultValues;
-import personal.leo.debezium_to_kudu.worker.constants.PropKeys;
+import personal.leo.debezium_to_kudu.constants.DefaultValues;
+import personal.leo.debezium_to_kudu.constants.OperationType;
+import personal.leo.debezium_to_kudu.constants.PayloadKeys;
+import personal.leo.debezium_to_kudu.constants.PropKeys;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -44,8 +44,6 @@ public class KuduSyncer {
      */
     private final String kuduTableName;
     private final int maxBatchSize;
-    //TODO 如果kudu插入有性能问题,可以考虑在update的时候,减轻服务端压力,做columnDiff,仅把更新的字段做upsert
-    private final boolean onlySyncValueChangedColumns;
     private final boolean logEnabled;
     private final Map<String, ColumnSchema> kuduColumnNameMapKuduColumn;
     private final SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
@@ -53,11 +51,10 @@ public class KuduSyncer {
     public KuduSyncer(Map<String, String> props) throws KuduException {
         masterAddresses = props.get(PropKeys.masterAddresses);
         kuduTableName = props.get(PropKeys.kuduTableName);
-        maxBatchSize = Integer.parseInt(props.getOrDefault(PropKeys.maxBatchSize, PropDefaultValues.maxBatchSize)) + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
-        onlySyncValueChangedColumns = Boolean.parseBoolean(props.getOrDefault(PropKeys.onlySyncValueChangedColumns, PropDefaultValues.onlySyncValueChangedColumns));
-        logEnabled = Boolean.parseBoolean(props.getOrDefault(PropKeys.logEnabled, PropDefaultValues.logEnabled));
+        maxBatchSize = Integer.parseInt(props.getOrDefault(PropKeys.maxBatchSize, String.valueOf(DefaultValues.maxBatchSize))) + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
+        logEnabled = Boolean.parseBoolean(props.getOrDefault(PropKeys.logEnabled, String.valueOf(DefaultValues.logEnabled)));
 
-        final String zoneId = props.getOrDefault(PropKeys.zoneId, PropDefaultValues.zoneId);
+        final String zoneId = props.getOrDefault(PropKeys.zoneId, DefaultValues.zoneId);
         sdf.setTimeZone(TimeZone.getTimeZone(zoneId));
 
         kuduClient = new KuduClient.KuduClientBuilder(masterAddresses).build();
@@ -251,7 +248,6 @@ public class KuduSyncer {
                 "masterAddresses='" + masterAddresses + '\'' +
                 ", kuduTableName='" + kuduTableName + '\'' +
                 ", maxBatchSize=" + maxBatchSize +
-                ", onlySyncValueChangedColumns=" + onlySyncValueChangedColumns +
                 ", logEnabled=" + logEnabled +
                 ", kuduColumnNameMapKuduColumn=" + kuduColumnNameMapKuduColumn +
                 '}';

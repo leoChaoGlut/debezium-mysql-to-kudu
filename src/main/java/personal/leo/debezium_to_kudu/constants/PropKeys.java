@@ -1,4 +1,4 @@
-package personal.leo.debezium_to_kudu.worker.constants;
+package personal.leo.debezium_to_kudu.constants;
 
 public interface PropKeys {
     String masterAddresses = "masterAddresses";
@@ -22,4 +22,7 @@ public interface PropKeys {
     String valueConverter = "value.converter";
 
     String zoneId = "zoneId";
+
+    String databaseHistoryConnectorId = "database.history.connector.id";
+    String databaseServerName = "database.server.name";
 }

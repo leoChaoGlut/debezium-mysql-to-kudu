@@ -1,4 +1,4 @@
-package personal.leo.debezium_to_kudu.worker.constants;
+package personal.leo.debezium_to_kudu.constants;
 
 import java.util.Objects;
 

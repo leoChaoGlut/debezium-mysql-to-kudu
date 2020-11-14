@@ -1,4 +1,4 @@
-package personal.leo.debezium_to_kudu.worker.constants;
+package personal.leo.debezium_to_kudu.constants;
 
 public interface PayloadKeys {
     String payload = "payload";

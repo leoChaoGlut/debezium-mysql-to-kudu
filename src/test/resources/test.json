@@ -1,0 +1,16 @@
+{
+  "databaseHistory": "personal.leo.debezium_to_kudu.debezium.mysql.MysqlDatabaseHistory",
+  "databaseHostname": "hdp04",
+  "databaseIncludeList": "test",
+  "databasePassword": "1",
+  "databasePort": 3306,
+  "databaseServerId": 0,
+  "databaseUser": "root",
+  "debeziumConnectorType": "MYSQL",
+  "maxBatchSize": 5120,
+  "maxQueueSize": 20480,
+  "offsetFlushIntervalMs": 3000,
+  "offsetStorage": "personal.leo.debezium_to_kudu.debezium.mysql.MysqlOffsetBackingStore",
+  "snapshotMode": "SCHEMA_ONLY",
+  "tableIncludeList": "test\\.t10"
+}
