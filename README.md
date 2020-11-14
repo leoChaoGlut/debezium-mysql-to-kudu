@@ -1,2 +1,2 @@
-# debezium-mysql-to-kudu
-debezium-mysql-to-kudu
+# debezium-to-kudu
+debezium-to-kudu
