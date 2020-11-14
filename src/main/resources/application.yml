@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://hdp04:3306/debezium_mysql_to_kudu
+    username: root
+    password: 1
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+#logging:
+#  level:
+#    personal.leo.presto.gateway.mapper.prestogateway: DEBUG
+server:
+  port: 10010
+
