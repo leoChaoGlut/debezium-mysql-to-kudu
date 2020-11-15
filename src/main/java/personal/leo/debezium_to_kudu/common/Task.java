@@ -8,11 +8,12 @@ import lombok.experimental.Accessors;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import personal.leo.debezium_to_kudu.constants.DebeziumConnectorType;
 import personal.leo.debezium_to_kudu.constants.DefaultValues;
-import personal.leo.debezium_to_kudu.mapper.po.InstancePO;
+import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
 
 import javax.validation.constraints.NotBlank;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static personal.leo.debezium_to_kudu.constants.Separator.DOT;
 
@@ -21,7 +22,7 @@ import static personal.leo.debezium_to_kudu.constants.Separator.DOT;
 @Setter
 @EqualsAndHashCode(of = {"databaseHostname", "databasePort", "databaseUser"})
 @ToString
-public class Instance {
+public class Task {
     @NonNull
     private DebeziumConnectorType debeziumConnectorType;
 
@@ -39,6 +40,9 @@ public class Instance {
     private String databaseUser;
     @NotBlank
     private String databasePassword;
+    /**
+     * 由数据库自增主键生成
+     */
     private int databaseServerId;
 
     private MySqlConnectorConfig.SnapshotMode snapshotMode = DefaultValues.snapshotMode;
@@ -46,11 +50,17 @@ public class Instance {
     private String databaseIncludeList;
     @NotBlank
     private String tableIncludeList;
+    @NonNull
+    private Set<KuduSink> kuduSinks;
 
     private Map<String, Object> extra;
 
     public String getDatabaseServerName() {
         return databaseHostname + DOT + databasePort + DOT + databaseUser;
+    }
+
+    public String id() {
+        return getDatabaseServerName();
     }
 
     public Properties toProps() {
@@ -80,10 +90,23 @@ public class Instance {
     }
 
 
-    public static Instance of(InstancePO instancePO) {
-        final Instance instance = JSON.parseObject(instancePO.getJson(), Instance.class);
-        instance.setDatabaseServerId(instancePO.getInstance_num());
-        return instance;
+    public static Task of(TaskPO taskPO) {
+        final Task task = JSON.parseObject(taskPO.getJson(), Task.class);
+        task.setDatabaseServerId(taskPO.getTask_num());
+        return task;
+    }
+
+    public enum State {
+        ACTIVE, INACTIVE
+    }
+
+    @Accessors(chain = true)
+    @Getter
+    @Setter
+    @EqualsAndHashCode(of = "kuduTableName")
+    public static class KuduSink {
+        private String kuduTableName;
+        private String srcTableIdRegex;
     }
 
 }

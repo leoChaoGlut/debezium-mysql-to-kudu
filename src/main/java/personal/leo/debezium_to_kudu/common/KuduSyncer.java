@@ -1,17 +1,17 @@
 package personal.leo.debezium_to_kudu.common;
 
-import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.kafka.connect.data.Field;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kudu.ColumnSchema;
 import org.apache.kudu.Type;
 import org.apache.kudu.client.*;
-import personal.leo.debezium_to_kudu.constants.DefaultValues;
+import personal.leo.debezium_to_kudu.config.props.KuduProps;
 import personal.leo.debezium_to_kudu.constants.OperationType;
 import personal.leo.debezium_to_kudu.constants.PayloadKeys;
-import personal.leo.debezium_to_kudu.constants.PropKeys;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,14 +48,17 @@ public class KuduSyncer {
     private final boolean logEnabled;
     private final Map<String, ColumnSchema> kuduColumnNameMapKuduColumn;
     private final SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+    private final String srcTableIdRegex;
 
-    public KuduSyncer(Map<String, String> props) throws KuduException {
-        masterAddresses = props.get(PropKeys.masterAddresses);
-        kuduTableName = props.get(PropKeys.kuduTableName);
-        maxBatchSize = Integer.parseInt(props.getOrDefault(PropKeys.maxBatchSize, String.valueOf(DefaultValues.maxBatchSize))) + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
-        logEnabled = Boolean.parseBoolean(props.getOrDefault(PropKeys.logEnabled, String.valueOf(DefaultValues.logEnabled)));
+    public KuduSyncer(KuduProps kuduProps, Task.KuduSink kuduSink) throws KuduException {
+        masterAddresses = kuduProps.getMasterAddresses();
+        kuduTableName = kuduSink.getKuduTableName();
+        srcTableIdRegex = kuduSink.getSrcTableIdRegex();
 
-        final String zoneId = props.getOrDefault(PropKeys.zoneId, DefaultValues.zoneId);
+        maxBatchSize = kuduProps.getMaxBatchSize() + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
+        logEnabled = kuduProps.isLogEnabled();
+
+        final String zoneId = kuduProps.getZoneId();
         sdf.setTimeZone(TimeZone.getTimeZone(zoneId));
 
         kuduClient = new KuduClient.KuduClientBuilder(masterAddresses).build();
@@ -70,23 +74,25 @@ public class KuduSyncer {
     }
 
 
-    public Operation createOperationByPayload(JSONObject payload) {
-        final Map<String, Object> beforeColumnNameMapColumnValue = payload.getObject(PayloadKeys.before, Map.class);
-        final Map<String, Object> afterColumnNameMapColumnValue = payload.getObject(PayloadKeys.after, Map.class);
+    public Operation createOperationByPayload(Struct payload) {
+        final Struct after = payload.getStruct(PayloadKeys.after);
+        final Struct before = payload.getStruct(PayloadKeys.before);
+//        final Map<String, Object> beforeColumnNameMapColumnValue = payload.getObject(PayloadKeys.before, Map.class);
+//        final Map<String, Object> afterColumnNameMapColumnValue = payload.getObject(PayloadKeys.after, Map.class);
 
         final Operation operation;
         final String op = payload.getString(PayloadKeys.op);
         final OperationType operationType = OperationType.of(op);
 
-        final Map<String, Object> columnNameMapColumnValue;
+        final Struct columnNameMapColumnValue;
         switch (operationType) {
             case CREATE:
             case UPDATE:
-                columnNameMapColumnValue = afterColumnNameMapColumnValue;
+                columnNameMapColumnValue = after;
                 operation = kuduTable.newUpsert();
                 break;
             case DELETE:
-                columnNameMapColumnValue = beforeColumnNameMapColumnValue;
+                columnNameMapColumnValue = before;
                 operation = kuduTable.newDelete();
                 break;
             default:
@@ -94,9 +100,9 @@ public class KuduSyncer {
         }
 
         boolean hasAddData = false;
-        for (Map.Entry<String, Object> entry : columnNameMapColumnValue.entrySet()) {
-            final String srcColumnName = entry.getKey().toLowerCase();
-            final Object srcColumnValue = entry.getValue();
+        for (Field field : columnNameMapColumnValue.schema().fields()) {
+            final String srcColumnName = field.name().toLowerCase();
+            final Object srcColumnValue = columnNameMapColumnValue.get(field);
             final ColumnSchema kuduColumn = kuduColumnNameMapKuduColumn.get(srcColumnName);
             if (kuduColumn == null) {
 //                throw new RuntimeException("no column found for : " + srcColumnName);
@@ -110,6 +116,7 @@ public class KuduSyncer {
             }
         }
 
+
         if (hasAddData) {
             return operation;
         } else {
@@ -117,31 +124,8 @@ public class KuduSyncer {
         }
     }
 
-
-    public Operation createOperationByDataSet(final Map<String, Object> dataSet) {
-        final Operation operation = kuduTable.newUpsert();
-        boolean hasAddData = false;
-        for (Map.Entry<String, Object> entry : dataSet.entrySet()) {
-            final String columnName = entry.getKey().toLowerCase();
-            final Object columnValue = entry.getValue();
-            final ColumnSchema kuduColumn = kuduColumnNameMapKuduColumn.get(columnName);
-            if (kuduColumn == null) {
-//                throw new RuntimeException("no column found for : " + columnName);
-//                TODO 发现不存在的列,可能源库出现变更,需要发邮件通知
-            } else {
-                fillRow(kuduColumn, columnValue, operation.getRow());
-//                row.addObject(kuduColumn.getName(), columnValue);
-                if (!hasAddData) {
-                    hasAddData = true;
-                }
-            }
-        }
-
-        if (hasAddData) {
-            return operation;
-        } else {
-            throw new RuntimeException("no column value be set,please confirm the topics are match the kudu table: " + kuduTableName);
-        }
+    public boolean accept(String srcTableId) {
+        return Pattern.matches(srcTableIdRegex, srcTableId);
     }
 
     /**
@@ -223,6 +207,7 @@ public class KuduSyncer {
             session.apply(operation);
         }
 
+        operations.clear();
         final List<OperationResponse> resps = session.flush();
         if (resps.size() > 0) {
             OperationResponse resp = resps.get(0);
@@ -234,7 +219,6 @@ public class KuduSyncer {
         if (logEnabled) {
             log.info("sync: " + operations.size() + ",to " + kuduTableName + ",spend: " + watch);
         }
-        operations.clear();
     }
 
     public void stop() throws KuduException {

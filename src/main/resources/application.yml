@@ -8,4 +8,16 @@ spring:
 server:
   port: 9200
 
-zkServers: test01:2181
+#logging:
+#  level:
+#    personal.leo.debezium_to_kudu.mapper: DEBUG
+
+kudu:
+  master-addresses: kudu1:7051,kudu2:7051,kudu3:7051
+email:
+  hostName: smtp.163.com
+  from: youruser@163.com
+  user: youruser@163.com
+  password: yourpassword
+  tos:
+    - to@to.com

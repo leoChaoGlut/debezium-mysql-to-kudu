@@ -13,6 +13,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
+import static personal.leo.debezium_to_kudu.utils.MybatisUtils.assertOperationSuccess;
+
 public class MysqlOffsetBackingStore extends MemoryOffsetBackingStore {
     private static final Logger log = LoggerFactory.getLogger(MysqlOffsetBackingStore.class);
     private WorkerConfig config;
@@ -45,10 +47,10 @@ public class MysqlOffsetBackingStore extends MemoryOffsetBackingStore {
             byte[] key = (mapEntry.getKey() != null) ? mapEntry.getKey().array() : null;
             byte[] value = (mapEntry.getValue() != null) ? mapEntry.getValue().array() : null;
             final Offset offset = new Offset()
-                    .setInstance_id(instanceId)
+                    .setTask_id(instanceId)
                     .setKey(key)
                     .setValue(value);
-            offsetMapper.upsert(offset);
+            assertOperationSuccess(() -> offsetMapper.upsert(offset));
         }
     }
 

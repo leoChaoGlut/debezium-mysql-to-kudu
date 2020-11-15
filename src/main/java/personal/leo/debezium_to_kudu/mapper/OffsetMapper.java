@@ -12,11 +12,15 @@ import java.util.List;
 public interface OffsetMapper {
 
     @Insert(
-            "insert into offset(instance_id,`key`,value) values(#{instance_id},#{key},#{value}) " +
-                    "ON DUPLICATE KEY UPDATE `key` = #{key}, value = #{value}"
+            "insert into offset(task_id, `key`, value)\n" +
+                    "values (#{task_id}, #{key}, #{value})\n" +
+                    "ON DUPLICATE KEY UPDATE `key` = #{key},\n" +
+                    "                        value = #{value}"
     )
     int upsert(Offset offset);
 
-    @Select("select * from offset where instance_id = #{instanceId}")
-    List<Offset> select(@Param("instanceId") String instanceId);
+    @Select("select *\n" +
+            "from offset\n" +
+            "where task_id = #{taskId}")
+    List<Offset> select(@Param("taskId") String taskId);
 }

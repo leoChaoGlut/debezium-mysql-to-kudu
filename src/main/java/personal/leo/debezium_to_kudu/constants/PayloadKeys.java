@@ -5,4 +5,8 @@ public interface PayloadKeys {
     String before = "before";
     String after = "after";
     String op = "op";
+    String source = "source";
+    String db = "db";
+    String table = "table";
+
 }

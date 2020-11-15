@@ -10,7 +10,7 @@ import java.util.Date;
 @Getter
 @Setter
 public class Offset {
-    private String instance_id;
+    private String task_id;
     private byte[] key;
     private byte[] value;
     private Date create_time;

@@ -3,6 +3,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 public class CommonTest {
     public static void main(String[] args) throws IOException {
@@ -79,4 +81,19 @@ public class CommonTest {
         final JSONObject jsonObject = JSON.parseObject(json);
         System.out.println(jsonObject.getJSONObject("source").getString("server"));
     }
+
+    @Test
+    public void test1() {
+        String regex = "^(test)\\.(t10_[0-9]+)$";
+        final StopWatch watch = StopWatch.createStarted();
+        System.out.println(Pattern.matches(regex, "test.t10_1"));
+        System.out.println(Pattern.matches(regex, "test.t10_"));
+        System.out.println(Pattern.matches(regex, "test.t10_11111111"));
+        System.out.println(Pattern.matches(regex, "test1.t101"));
+        System.out.println(Pattern.matches(regex, "test1.t111"));
+        watch.stop();
+        System.out.println(watch);
+    }
+
+
 }

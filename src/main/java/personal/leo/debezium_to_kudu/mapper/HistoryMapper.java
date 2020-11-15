@@ -10,13 +10,18 @@ import java.util.List;
 
 @Mapper
 public interface HistoryMapper {
-    @Insert("insert into history(instance_id,json) values(#{instanceId},#{json})")
-    int insert(@Param("instanceId") String instanceId, @Param("json") String json);
+    @Insert("insert into history(task_id, json)\n" +
+            "values (#{taskId}, #{json})")
+    int insert(@Param("taskId") String taskId, @Param("json") String json);
 
-    @Select("select * from history where instance_id = #{instanceId}")
-    List<History> select(@Param("instanceId") String instanceId);
+    @Select("select *\n" +
+            "from history\n" +
+            "where task_id = #{taskId}")
+    List<History> select(@Param("taskId") String taskId);
 
-    @Select("select count(*) from history where instance_id = #{instanceId}")
-    int count(@Param("instanceId") String instanceId);
+    @Select("select count(*)\n" +
+            "from history\n" +
+            "where task_id = #{taskId}")
+    int count(@Param("taskId") String taskId);
 
 }

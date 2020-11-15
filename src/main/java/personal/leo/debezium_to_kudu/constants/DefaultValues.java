@@ -16,11 +16,5 @@ public interface DefaultValues {
     Class<? extends MemoryOffsetBackingStore> offsetStorage = MysqlOffsetBackingStore.class;
     Class<? extends AbstractDatabaseHistory> databaseHistory = MysqlDatabaseHistory.class;
 
-    String emailHostName = "smtp.163.com";
-    String emailFrom = "ypshengxian@163.com";
-    String emailUser = "ypshengxian@163.com";
-    String emailPassword = "YBYFNAGEYXJAGQMO";
-    String emailTo = "liaochao@ypshengxian.com";
-
     String zoneId = "GMT+16";
 }

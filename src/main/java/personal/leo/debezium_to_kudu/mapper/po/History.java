@@ -10,7 +10,7 @@ import java.util.Date;
 @Getter
 @Setter
 public class History {
-    private String instance_id;
+    private String task_id;
     private String json;
     private Date create_time;
 }

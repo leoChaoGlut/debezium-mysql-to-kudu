@@ -21,6 +21,9 @@ public class CommonUtils {
 
 
     public static String getThisServerId() {
+        if (port <= 0) {
+            throw new RuntimeException("port has not initialized: " + port);
+        }
         return getIp() + ":" + port;
     }
 
