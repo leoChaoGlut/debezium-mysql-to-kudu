@@ -103,7 +103,7 @@
 
 
     <build>
-        <finalName>debezium-mysql-to-kudu</finalName>
+        <finalName>debezium-to-kudu</finalName>
 
         <plugins>
             <plugin>
