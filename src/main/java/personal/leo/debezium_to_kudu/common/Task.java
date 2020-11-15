@@ -13,7 +13,6 @@ import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
 import javax.validation.constraints.NotBlank;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import static personal.leo.debezium_to_kudu.constants.Separator.DOT;
 
@@ -50,8 +49,11 @@ public class Task {
     private String databaseIncludeList;
     @NotBlank
     private String tableIncludeList;
-    @NonNull
-    private Set<KuduSink> kuduSinks;
+    @NotBlank
+    private String kuduTableName;
+    @NotBlank
+    private String srcTableIdRegex;
+
 
     private Map<String, Object> extra;
 
@@ -100,13 +102,5 @@ public class Task {
         ACTIVE, INACTIVE
     }
 
-    @Accessors(chain = true)
-    @Getter
-    @Setter
-    @EqualsAndHashCode(of = "kuduTableName")
-    public static class KuduSink {
-        private String kuduTableName;
-        private String srcTableIdRegex;
-    }
 
 }

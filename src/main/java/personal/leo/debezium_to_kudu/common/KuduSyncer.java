@@ -1,5 +1,6 @@
 package personal.leo.debezium_to_kudu.common;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -44,16 +45,17 @@ public class KuduSyncer {
      * TODO 需要非常明确topic和kuduTable的关系,否则可能出现数据错乱,需要拿kudu表名与topics.regex进行校验
      */
     private final String kuduTableName;
+    @Getter
     private final int maxBatchSize;
     private final boolean logEnabled;
     private final Map<String, ColumnSchema> kuduColumnNameMapKuduColumn;
     private final SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
     private final String srcTableIdRegex;
 
-    public KuduSyncer(KuduProps kuduProps, Task.KuduSink kuduSink) throws KuduException {
+    public KuduSyncer(KuduProps kuduProps, Task task) throws KuduException {
         masterAddresses = kuduProps.getMasterAddresses();
-        kuduTableName = kuduSink.getKuduTableName();
-        srcTableIdRegex = kuduSink.getSrcTableIdRegex();
+        kuduTableName = task.getKuduTableName();
+        srcTableIdRegex = task.getSrcTableIdRegex();
 
         maxBatchSize = kuduProps.getMaxBatchSize() + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
         logEnabled = kuduProps.isLogEnabled();
@@ -74,25 +76,23 @@ public class KuduSyncer {
     }
 
 
-    public Operation createOperationByPayload(Struct payload) {
+    public Operation createOperation(Struct payload) {
         final Struct after = payload.getStruct(PayloadKeys.after);
         final Struct before = payload.getStruct(PayloadKeys.before);
-//        final Map<String, Object> beforeColumnNameMapColumnValue = payload.getObject(PayloadKeys.before, Map.class);
-//        final Map<String, Object> afterColumnNameMapColumnValue = payload.getObject(PayloadKeys.after, Map.class);
 
         final Operation operation;
         final String op = payload.getString(PayloadKeys.op);
         final OperationType operationType = OperationType.of(op);
 
-        final Struct columnNameMapColumnValue;
+        final Struct fields;
         switch (operationType) {
             case CREATE:
             case UPDATE:
-                columnNameMapColumnValue = after;
+                fields = after;
                 operation = kuduTable.newUpsert();
                 break;
             case DELETE:
-                columnNameMapColumnValue = before;
+                fields = before;
                 operation = kuduTable.newDelete();
                 break;
             default:
@@ -100,9 +100,9 @@ public class KuduSyncer {
         }
 
         boolean hasAddData = false;
-        for (Field field : columnNameMapColumnValue.schema().fields()) {
+        for (Field field : fields.schema().fields()) {
             final String srcColumnName = field.name().toLowerCase();
-            final Object srcColumnValue = columnNameMapColumnValue.get(field);
+            final Object srcColumnValue = fields.get(field);
             final ColumnSchema kuduColumn = kuduColumnNameMapKuduColumn.get(srcColumnName);
             if (kuduColumn == null) {
 //                throw new RuntimeException("no column found for : " + srcColumnName);
@@ -115,7 +115,6 @@ public class KuduSyncer {
                 }
             }
         }
-
 
         if (hasAddData) {
             return operation;
@@ -207,7 +206,6 @@ public class KuduSyncer {
             session.apply(operation);
         }
 
-        operations.clear();
         final List<OperationResponse> resps = session.flush();
         if (resps.size() > 0) {
             OperationResponse resp = resps.get(0);
@@ -219,6 +217,7 @@ public class KuduSyncer {
         if (logEnabled) {
             log.info("sync: " + operations.size() + ",to " + kuduTableName + ",spend: " + watch);
         }
+        operations.clear();
     }
 
     public void stop() throws KuduException {

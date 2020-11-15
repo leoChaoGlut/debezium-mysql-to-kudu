@@ -5,7 +5,6 @@ import io.debezium.engine.DebeziumEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
@@ -13,9 +12,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import personal.leo.debezium_to_kudu.common.EmailService;
 import personal.leo.debezium_to_kudu.common.KuduSyncer;
+import personal.leo.debezium_to_kudu.common.MsgConsumer;
 import personal.leo.debezium_to_kudu.common.Task;
 import personal.leo.debezium_to_kudu.config.props.KuduProps;
-import personal.leo.debezium_to_kudu.constants.PayloadKeys;
 import personal.leo.debezium_to_kudu.mapper.TaskMapper;
 import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
 import personal.leo.debezium_to_kudu.utils.CommonUtils;
@@ -24,7 +23,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static personal.leo.debezium_to_kudu.constants.Separator.DOT;
 import static personal.leo.debezium_to_kudu.constants.WorkerConfig.*;
 import static personal.leo.debezium_to_kudu.utils.MybatisUtils.assertOperationSuccess;
 
@@ -41,7 +39,6 @@ public class Worker {
     KuduProps kuduProps;
 
     private final Map<Task, EmbeddedEngine> taskMapEngine = Collections.synchronizedMap(new HashMap<>());
-
 
     @Scheduled(fixedDelay = occupyTasksPeriodSec * 1000)
     private void occupyTasks() {
@@ -85,47 +82,21 @@ public class Worker {
         }
     }
 
-    private void runTask(Task task) throws Exception {
-        final Properties props = task.toProps();
-        log.info("runTask: " + props);
-
-        final Set<Task.KuduSink> kuduSinks = task.getKuduSinks();
-        final Set<KuduSyncer> kuduSyncers = new HashSet<>();
-        for (Task.KuduSink kuduSink : kuduSinks) {
-            kuduSyncers.add(new KuduSyncer(kuduProps, kuduSink));
-        }
-
-        final DebeziumEngine.ChangeConsumer<SourceRecord> msgConsumer = (records, committer) -> {
-            log.info("msg: " + records.size());
-            for (SourceRecord record : records) {
-                final Struct payload = (Struct) record.value();
-                final Struct source = payload.getStruct(PayloadKeys.source);
-                final String srcTableId = source.getString(PayloadKeys.db) + DOT + source.getString(PayloadKeys.table);
-                final List<KuduSyncer> acceptedKuduSyncers = kuduSyncers.stream()
-                        .filter(kuduSyncer -> kuduSyncer.accept(srcTableId))
-                        .collect(Collectors.toList());
-//                TODO
-//                TODO
-//                TODO
-//                TODO
-                System.out.println(payload);
-
-            }
-            if (records.size() > 5) {
-                throw new RuntimeException("1");
-            }
-            for (SourceRecord record : records) {
-                committer.markProcessed(record);
-            }
-            committer.markBatchFinished();
-        };
-
+    private void asyncRunTask(Task task) {
         taskExecutor.execute(() -> {
-            final EmbeddedEngine engine = new EmbeddedEngine.BuilderImpl()
-                    .using(props)
-                    .notifying(msgConsumer)
-                    .build();
+            final Properties props = task.toProps();
+            log.info("runTask: " + props);
+
+            EmbeddedEngine engine = null;
             try {
+                final KuduSyncer kuduSyncer = new KuduSyncer(kuduProps, task);
+                final DebeziumEngine.ChangeConsumer<SourceRecord> msgConsumer = new MsgConsumer(kuduSyncer);
+
+                engine = new EmbeddedEngine.BuilderImpl()
+                        .using(props)
+                        .notifying(msgConsumer)
+                        .build();
+
                 taskMapEngine.put(task, engine);
 
                 engine.run();
@@ -149,7 +120,10 @@ public class Worker {
     }
 
     private void stopTask(Task task, EmbeddedEngine engine) {
-
+        if (engine != null) {
+            engine.stop();
+        }
+        taskMapEngine.remove(task);
         taskMapper.setUpdateTimeToNull(task.id());
     }
 
@@ -185,7 +159,7 @@ public class Worker {
     private void tryRunTask(TaskPO taskPO) {
         final Task task = Task.of(taskPO);
         try {
-            runTask(task);
+            asyncRunTask(task);
         } catch (Exception e) {
             final EmbeddedEngine engine = taskMapEngine.get(task);
             if (engine != null) {
