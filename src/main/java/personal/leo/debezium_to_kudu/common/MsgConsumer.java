@@ -6,6 +6,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kudu.client.Operation;
 import personal.leo.debezium_to_kudu.constants.PayloadKeys;
+import personal.leo.debezium_to_kudu.kudu.KuduSyncer;
 import personal.leo.debezium_to_kudu.utils.StructUtils;
 
 import java.util.ArrayList;
@@ -26,8 +27,6 @@ public class MsgConsumer implements DebeziumEngine.ChangeConsumer<SourceRecord> 
 
     @Override
     public void handleBatch(List<SourceRecord> records, DebeziumEngine.RecordCommitter<SourceRecord> committer) throws InterruptedException {
-        log.info("msg: " + records.size());
-
         try {
             for (SourceRecord record : records) {
                 final Struct payload = (Struct) record.value();

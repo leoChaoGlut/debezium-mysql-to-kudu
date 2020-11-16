@@ -50,7 +50,6 @@ public class Task {
     @NotBlank
     private String kuduTableName;
 
-
     private Map<String, Object> extra;
 
     public String getDatabaseServerName() {
@@ -86,6 +85,7 @@ public class Task {
         //snapshop和binlogreader时区有冲突,全量同步通过jdbc,不能通过initial模式,否则时间会乱
         props.setProperty("database.serverTimezone", DefaultValues.databaseServerTimezone);
         props.setProperty("snapshot.mode", DefaultValues.snapshotMode.getValue());
+        props.setProperty("decimal.handling.mode", "string");
 
         return props;
     }

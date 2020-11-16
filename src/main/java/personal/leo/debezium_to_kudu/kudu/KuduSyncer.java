@@ -1,4 +1,4 @@
-package personal.leo.debezium_to_kudu.common;
+package personal.leo.debezium_to_kudu.kudu;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kudu.ColumnSchema;
 import org.apache.kudu.Type;
 import org.apache.kudu.client.*;
+import personal.leo.debezium_to_kudu.common.Task;
 import personal.leo.debezium_to_kudu.config.props.KuduProps;
 import personal.leo.debezium_to_kudu.constants.OperationType;
 import personal.leo.debezium_to_kudu.constants.PayloadKeys;
@@ -27,19 +28,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class KuduSyncer {
-    public static final String DEFAULT_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
-    public static final String[] datePatterns = {
-            DateFormatUtils.ISO_8601_EXTENDED_DATETIME_FORMAT.getPattern(),
-            DateFormatUtils.ISO_8601_EXTENDED_DATETIME_TIME_ZONE_FORMAT.getPattern(),
-            DateFormatUtils.ISO_8601_EXTENDED_DATE_FORMAT.getPattern(),
-            DEFAULT_DATE_PATTERN,
-    };
-    private final KuduClient kuduClient;
+public class KuduSyncer implements AutoCloseable {
+
     private final KuduSession session;
     private final KuduTable kuduTable;
 
-    private final String masterAddresses;
     /**
      * TODO 需要非常明确topic和kuduTable的关系,否则可能出现数据错乱,需要拿kudu表名与topics.regex进行校验
      */
@@ -53,7 +46,6 @@ public class KuduSyncer {
     private final TimeZone timeZone;
 
     public KuduSyncer(KuduProps kuduProps, Task task) throws KuduException {
-        masterAddresses = kuduProps.getMasterAddresses();
         kuduTableName = task.getKuduTableName();
         tableIncludeList = task.getTableIncludeList();
 
@@ -64,11 +56,9 @@ public class KuduSyncer {
         dateFormat = new SimpleDateFormat(DateFormatUtils.ISO_8601_EXTENDED_DATETIME_FORMAT.getPattern());
         dateFormat.setTimeZone(timeZone);
 
-        kuduClient = new KuduClient.KuduClientBuilder(masterAddresses).build();
+        kuduTable = KuduManager.getTable(kuduTableName);
 
-        kuduTable = kuduClient.openTable(kuduTableName);
-
-        session = kuduClient.newSession();
+        session = KuduManager.getKuduClient().newSession();
         session.setFlushMode(SessionConfiguration.FlushMode.MANUAL_FLUSH);
         session.setMutationBufferSpace(maxBatchSize);
 
@@ -214,19 +204,8 @@ public class KuduSyncer {
     }
 
 
-    public void stop() throws KuduException {
-        session.close();
-        kuduClient.close();
-    }
-
     @Override
-    public String toString() {
-        return "KuduSyncer{" +
-                "masterAddresses='" + masterAddresses + '\'' +
-                ", kuduTableName='" + kuduTableName + '\'' +
-                ", maxBatchSize=" + maxBatchSize +
-                ", logEnabled=" + logEnabled +
-                ", kuduColumnNameMapKuduColumn=" + kuduColumnNameMapKuduColumn +
-                '}';
+    public void close() throws Exception {
+        session.close();
     }
 }

@@ -5,11 +5,14 @@ import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
+import org.springframework.boot.task.TaskExecutorBuilder;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -93,6 +96,26 @@ public class CommonTest {
         System.out.println(Pattern.matches(regex, "test1.t111"));
         watch.stop();
         System.out.println(watch);
+    }
+
+    @Test
+    public void test2() throws InterruptedException {
+        final ThreadPoolTaskExecutor taskExecutor = new TaskExecutorBuilder()
+                .corePoolSize(2)
+                .queueCapacity(1)
+                .build();
+        taskExecutor.initialize();
+        for (int i = 0; i < 3; i++) {
+            taskExecutor.submit(() -> {
+                System.out.println(Thread.currentThread().getId());
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+        TimeUnit.SECONDS.sleep(5);
     }
 
 
