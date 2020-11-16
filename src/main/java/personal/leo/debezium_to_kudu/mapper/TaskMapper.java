@@ -90,4 +90,9 @@ public interface TaskMapper {
             "where kudu_table_name = #{kuduTableName}"
     )
     int activateAll(@Param("kuduTableName") String kuduTableName);
+
+    @Update("delete\n" +
+            "from task\n" +
+            "where task_id = #{taskId}")
+    int deleteByPk(@Param("taskId") String taskId);
 }

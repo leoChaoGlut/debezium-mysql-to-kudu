@@ -24,4 +24,8 @@ public interface HistoryMapper {
             "where task_id = #{taskId}")
     int count(@Param("taskId") String taskId);
 
+    @Select("delete\n" +
+            "from history\n" +
+            "where task_id = #{taskId}")
+    int deleteByTaskId(@Param("taskId") String taskId);
 }

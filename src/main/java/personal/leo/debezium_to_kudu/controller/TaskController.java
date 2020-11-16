@@ -3,6 +3,7 @@ package personal.leo.debezium_to_kudu.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import personal.leo.debezium_to_kudu.common.Task;
+import personal.leo.debezium_to_kudu.common.TaskService;
 import personal.leo.debezium_to_kudu.mapper.TaskMapper;
 import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
 import personal.leo.debezium_to_kudu.worker.Worker;
@@ -17,6 +18,8 @@ public class TaskController {
     TaskMapper taskMapper;
     @Autowired
     Worker worker;
+    @Autowired
+    TaskService taskService;
 
     @PostMapping("create")
     public TaskPO create(@RequestBody Task task) {
@@ -65,6 +68,12 @@ public class TaskController {
     @GetMapping("deactivate/all")
     public String deactivateAll(String kuduTableName) {
         assertOperationSuccess(() -> taskMapper.deactivateAll(kuduTableName));
+        return "ok";
+    }
+
+    @GetMapping("delete")
+    public String delete(String taskId) {
+        taskService.delete(taskId);
         return "ok";
     }
 

@@ -23,4 +23,9 @@ public interface OffsetMapper {
             "from offset\n" +
             "where task_id = #{taskId}")
     List<Offset> select(@Param("taskId") String taskId);
+
+    @Select("delete\n" +
+            "from offset\n" +
+            "where task_id = #{taskId}")
+    int deleteByTaskId(@Param("taskId") String taskId);
 }
