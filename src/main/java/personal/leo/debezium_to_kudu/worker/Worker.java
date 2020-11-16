@@ -47,7 +47,7 @@ public class Worker {
                 try {
                     assertOperationSuccess(() -> taskMapper.occupy(taskPO.getTask_id(), taskPO.getWorker(), CommonUtils.getThisServerId()));
                     tryRunTask(taskPO);
-                    break;//为了公平获取,比较简单的实现方式
+                    return;//为了公平获取,比较简单的实现方式
                 } catch (Exception e) {
                     log.error("occupyTask failed: ", e);
                 }
