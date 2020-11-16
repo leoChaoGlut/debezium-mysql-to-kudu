@@ -57,7 +57,7 @@ public class Task {
     }
 
     public String id() {
-        return getDatabaseServerName();
+        return getDatabaseServerName() + DOT + kuduTableName;
     }
 
     public Properties toProps() {
