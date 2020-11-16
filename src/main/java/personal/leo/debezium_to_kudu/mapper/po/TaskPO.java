@@ -26,7 +26,7 @@ public class TaskPO {
     public static TaskPO of(Task task) {
         return new TaskPO()
                 .setTask_num(task.getDatabaseServerId())
-                .setTask_id(task.getDatabaseServerName())
+                .setTask_id(task.id())
                 .setKudu_table_name(task.getKuduTableName())
                 .setJson(JSON.toJSONString(task));
     }
