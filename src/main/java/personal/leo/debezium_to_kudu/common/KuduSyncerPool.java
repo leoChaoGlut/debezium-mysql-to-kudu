@@ -7,17 +7,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * TODO 更新task信息后,这里没有及时更新,暂时不使用
+ */
 public class KuduSyncerPool {
     private static final Map<String, KuduSyncer> kuduTableNameMapKuduSyncer = Collections.synchronizedMap(new HashMap<>());
 
-    /**
-     * TODO 跟随update
-     *
-     * @param kuduProps
-     * @param task
-     * @return
-     * @throws KuduException
-     */
     public static KuduSyncer get(KuduProps kuduProps, Task task) throws KuduException {
         KuduSyncer kuduSyncer = kuduTableNameMapKuduSyncer.get(task.getKuduTableName());
         if (kuduSyncer == null) {
@@ -25,5 +20,9 @@ public class KuduSyncerPool {
             kuduTableNameMapKuduSyncer.put(task.getKuduTableName(), kuduSyncer);
         }
         return kuduSyncer;
+    }
+
+    public static KuduSyncer remove(String kuduTableName) {
+        return kuduTableNameMapKuduSyncer.remove(kuduTableName);
     }
 }

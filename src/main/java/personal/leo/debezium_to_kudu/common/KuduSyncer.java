@@ -158,23 +158,14 @@ public class KuduSyncer {
 //                TODO date类型转换会出现1970-01-01
                 try {
                     row.addTimestamp(kuduColumnName, new Timestamp(Long.parseLong(value)));
-//                    row.addLong(kuduColumnName,  / 1000);
                 } catch (NumberFormatException e) {
                     try {
-                        log.info(value);
                         final Date date = dateFormat.parse(value);
                         row.addTimestamp(kuduColumnName, new Timestamp(date.getTime()));
-//                        row.addLong(kuduColumnName, date.getTime() / 1000);
-//                    TODO     89049 | 1970-01-19 13:53:37.914
-//  4001 | 1970-01-19 12:09:35.829
-//                        final String zonedDateStr = sdf.format(date);
-//                        final Date zonedDate = DateUtils.parseDate(zonedDateStr, datePatterns);
-//                        row.addLong(kuduColumnName, zonedDate.getTime());
                     } catch (ParseException ex) {
                         throw new RuntimeException("parse date error:" + value);
                     }
                 }
-//                row.addTimestamp(kuduColumnName, timestamp);
                 break;
             case FLOAT:
                 row.addFloat(kuduColumnName, Float.parseFloat(value));
