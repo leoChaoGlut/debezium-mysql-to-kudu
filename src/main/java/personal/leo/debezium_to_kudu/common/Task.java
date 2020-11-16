@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import io.debezium.relational.history.AbstractDatabaseHistory;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import personal.leo.debezium_to_kudu.constants.DebeziumConnectorType;
 import personal.leo.debezium_to_kudu.constants.DefaultValues;
@@ -79,7 +80,7 @@ public class Task {
         props.setProperty("database.include.list", databaseIncludeList);
         props.setProperty("table.include.list", tableIncludeList);
 
-        props.setProperty("database.server.id", String.valueOf(databaseServerId));
+        props.setProperty("database.server.id", String.valueOf(RandomUtils.nextInt(1, 100000)));
         props.setProperty("database.server.name", getDatabaseServerName());
 
         //snapshop和binlogreader时区有冲突,全量同步通过jdbc,不能通过initial模式,否则时间会乱
@@ -92,10 +93,7 @@ public class Task {
 
 
     public static Task of(TaskPO taskPO) {
-        final Task task = JSON.parseObject(taskPO.getJson(), Task.class);
-        task.setDatabaseServerId(taskPO.getTask_num())
-                .setKuduTableName(taskPO.getKudu_table_name());
-        return task;
+        return JSON.parseObject(taskPO.getJson(), Task.class);
     }
 
     public enum State {
