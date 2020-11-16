@@ -1,0 +1,51 @@
+POST http://localhost:10010/task/create
+Content-Type: application/json
+
+
+{
+  "debeziumConnectorType": "MYSQL",
+  "databaseHostname": "hdp04",
+  "databaseUser": "root",
+  "databasePassword": "1",
+  "databaseIncludeList": "test",
+  "tableIncludeList": "test\\.t10",
+  "kuduTableName": "presto.test.t10",
+  "snapshotMode": "INITIAL"
+}
+
+
+###
+
+GET http://localhost:10010/task/get?taskId=rm-uf628791m7pg23yup.mysql.rds.aliyuncs.com.3306.ylp_read
+
+
+###
+GET http://localhost:10010/task/deactivate?taskId=rm-uf628791m7pg23yup.mysql.rds.aliyuncs.com.3306.ylp_read
+
+
+
+###
+GET http://localhost:10010/task/activate?taskId=rm-uf628791m7pg23yup.mysql.rds.aliyuncs.com.3306.ylp_read
+
+
+
+###
+POST http://localhost:10010/task/update
+Content-Type: application/json
+
+
+{
+  "debeziumConnectorType": "MYSQL",
+  "databaseHostname": "rm-uf628791m7pg23yup.mysql.rds.aliyuncs.com",
+  "databaseUser": "ylp_read",
+  "databasePassword": "KJKJK12878",
+  "databaseIncludeList": "^(ypsx_ylp_0|ypsx_ylp_1)$",
+  "tableIncludeList": "^(ypsx_ylp_0|ypsx_ylp_1)\\.(inv_move_order)$",
+  "kuduTableName": "presto.ods_wms.inv_move_order",
+  "srcTableIdRegex": "^(ypsx_ylp_0|ypsx_ylp_1)\\.inv_move_order$",
+  "snapshotMode": "INITIAL",
+  "logEnabled": "true"
+}
+
+
+###

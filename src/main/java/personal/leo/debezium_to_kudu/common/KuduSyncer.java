@@ -3,7 +3,6 @@ package personal.leo.debezium_to_kudu.common;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
@@ -49,19 +48,21 @@ public class KuduSyncer {
     private final int maxBatchSize;
     private final boolean logEnabled;
     private final Map<String, ColumnSchema> kuduColumnNameMapKuduColumn;
-    private final SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
-    private final String srcTableIdRegex;
+    private final SimpleDateFormat dateFormat;
+    private final String tableIncludeList;
+    private final TimeZone timeZone;
 
     public KuduSyncer(KuduProps kuduProps, Task task) throws KuduException {
         masterAddresses = kuduProps.getMasterAddresses();
         kuduTableName = task.getKuduTableName();
-        srcTableIdRegex = task.getSrcTableIdRegex();
+        tableIncludeList = task.getTableIncludeList();
 
         maxBatchSize = kuduProps.getMaxBatchSize() + 10;//随便加几个size,防止kudu 报 超出maxBatchSize的错误
         logEnabled = kuduProps.isLogEnabled();
 
-        final String zoneId = kuduProps.getZoneId();
-        sdf.setTimeZone(TimeZone.getTimeZone(zoneId));
+        timeZone = TimeZone.getTimeZone(kuduProps.getZoneId());
+        dateFormat = new SimpleDateFormat(DateFormatUtils.ISO_8601_EXTENDED_DATETIME_FORMAT.getPattern());
+        dateFormat.setTimeZone(timeZone);
 
         kuduClient = new KuduClient.KuduClientBuilder(masterAddresses).build();
 
@@ -76,10 +77,7 @@ public class KuduSyncer {
     }
 
 
-    public Operation createOperation(Struct payload) {
-        final Struct after = payload.getStruct(PayloadKeys.after);
-        final Struct before = payload.getStruct(PayloadKeys.before);
-
+    public Operation createOperation(Struct after, Struct before, Struct payload) {
         final Operation operation;
         final String op = payload.getString(PayloadKeys.op);
         final OperationType operationType = OperationType.of(op);
@@ -124,7 +122,7 @@ public class KuduSyncer {
     }
 
     public boolean accept(String srcTableId) {
-        return Pattern.matches(srcTableIdRegex, srcTableId);
+        return Pattern.matches(tableIncludeList, srcTableId);
     }
 
     /**
@@ -158,21 +156,25 @@ public class KuduSyncer {
                 break;
             case UNIXTIME_MICROS:
 //                TODO date类型转换会出现1970-01-01
-                Timestamp timestamp;
                 try {
-                    timestamp = new Timestamp(Long.parseLong(value));
+                    row.addTimestamp(kuduColumnName, new Timestamp(Long.parseLong(value)));
+//                    row.addLong(kuduColumnName,  / 1000);
                 } catch (NumberFormatException e) {
                     try {
-                        final Date date = DateUtils.parseDate(value, datePatterns);
-                        final String convertedDateStr = sdf.format(date);
-                        final Date convertedDate = DateUtils.parseDate(convertedDateStr, datePatterns);
-                        timestamp = new Timestamp(convertedDate.getTime());
+                        log.info(value);
+                        final Date date = dateFormat.parse(value);
+                        row.addTimestamp(kuduColumnName, new Timestamp(date.getTime()));
+//                        row.addLong(kuduColumnName, date.getTime() / 1000);
+//                    TODO     89049 | 1970-01-19 13:53:37.914
+//  4001 | 1970-01-19 12:09:35.829
+//                        final String zonedDateStr = sdf.format(date);
+//                        final Date zonedDate = DateUtils.parseDate(zonedDateStr, datePatterns);
+//                        row.addLong(kuduColumnName, zonedDate.getTime());
                     } catch (ParseException ex) {
                         throw new RuntimeException("parse date error:" + value);
                     }
                 }
-
-                row.addTimestamp(kuduColumnName, timestamp);
+//                row.addTimestamp(kuduColumnName, timestamp);
                 break;
             case FLOAT:
                 row.addFloat(kuduColumnName, Float.parseFloat(value));
@@ -219,6 +221,7 @@ public class KuduSyncer {
         }
         operations.clear();
     }
+
 
     public void stop() throws KuduException {
         session.close();

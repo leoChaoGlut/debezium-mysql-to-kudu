@@ -16,5 +16,6 @@ public interface DefaultValues {
     Class<? extends MemoryOffsetBackingStore> offsetStorage = MysqlOffsetBackingStore.class;
     Class<? extends AbstractDatabaseHistory> databaseHistory = MysqlDatabaseHistory.class;
 
-    String zoneId = "GMT+16";
+    String zoneId = "GMT-8";
+    String databaseServerTimezone = "GMT";
 }

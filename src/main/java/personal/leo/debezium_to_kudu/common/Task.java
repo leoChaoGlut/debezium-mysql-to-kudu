@@ -1,7 +1,6 @@
 package personal.leo.debezium_to_kudu.common;
 
 import com.alibaba.fastjson.JSON;
-import io.debezium.connector.mysql.MySqlConnectorConfig;
 import io.debezium.relational.history.AbstractDatabaseHistory;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -44,15 +43,12 @@ public class Task {
      */
     private int databaseServerId;
 
-    private MySqlConnectorConfig.SnapshotMode snapshotMode = DefaultValues.snapshotMode;
     @NotBlank
     private String databaseIncludeList;
     @NotBlank
     private String tableIncludeList;
     @NotBlank
     private String kuduTableName;
-    @NotBlank
-    private String srcTableIdRegex;
 
 
     private Map<String, Object> extra;
@@ -86,7 +82,10 @@ public class Task {
 
         props.setProperty("database.server.id", String.valueOf(databaseServerId));
         props.setProperty("database.server.name", getDatabaseServerName());
-        props.setProperty("snapshot.mode", snapshotMode.getValue());
+
+        //snapshop和binlogreader时区有冲突,全量同步通过jdbc,不能通过initial模式,否则时间会乱
+        props.setProperty("database.serverTimezone", DefaultValues.databaseServerTimezone);
+        props.setProperty("snapshot.mode", DefaultValues.snapshotMode.getValue());
 
         return props;
     }

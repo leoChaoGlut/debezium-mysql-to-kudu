@@ -41,6 +41,11 @@ public class TaskController {
 //        TODO 校验非空
         final TaskPO taskPO = TaskPO.of(task);
         assertOperationSuccess(() -> taskMapper.updateJson(taskPO));
+//       TODO  KuduSyncerPool.delete(task); kuduSyncer的信息没有改变
+//       TODO  KuduSyncerPool.delete(task); kuduSyncer的信息没有改变
+//       TODO  KuduSyncerPool.delete(task); kuduSyncer的信息没有改变
+//       TODO  KuduSyncerPool.delete(task);
+//       TODO  KuduSyncerPool.delete(task);
         return taskPO;
     }
 

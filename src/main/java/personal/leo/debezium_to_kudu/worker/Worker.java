@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import personal.leo.debezium_to_kudu.common.*;
+import personal.leo.debezium_to_kudu.common.EmailService;
+import personal.leo.debezium_to_kudu.common.KuduSyncer;
+import personal.leo.debezium_to_kudu.common.MsgConsumer;
+import personal.leo.debezium_to_kudu.common.Task;
 import personal.leo.debezium_to_kudu.config.props.KuduProps;
 import personal.leo.debezium_to_kudu.mapper.TaskMapper;
 import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
@@ -87,7 +90,8 @@ public class Worker {
             EmbeddedEngine engine = null;
             try {
 
-                final KuduSyncer kuduSyncer = KuduSyncerPool.get(kuduProps, task);
+//                final KuduSyncer kuduSyncer = KuduSyncerPool.get(kuduProps, task);
+                final KuduSyncer kuduSyncer = new KuduSyncer(kuduProps, task);
                 final DebeziumEngine.ChangeConsumer<SourceRecord> msgConsumer = new MsgConsumer(kuduSyncer);
 
                 engine = new EmbeddedEngine.BuilderImpl()

@@ -6,6 +6,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kudu.client.Operation;
 import personal.leo.debezium_to_kudu.constants.PayloadKeys;
+import personal.leo.debezium_to_kudu.utils.StructUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,12 @@ public class MsgConsumer implements DebeziumEngine.ChangeConsumer<SourceRecord> 
                 final String srcTableId = source.getString(PayloadKeys.db) + DOT + source.getString(PayloadKeys.table);
                 final boolean accept = kuduSyncer.accept(srcTableId);
                 if (accept) {
-                    final Operation operation = kuduSyncer.createOperation(payload);
+                    final Struct after = StructUtils.getStruct(payload, PayloadKeys.after);
+                    final Struct before = StructUtils.getStruct(payload, PayloadKeys.before);
+                    if (after == null && before == null) {
+                        continue;
+                    }
+                    final Operation operation = kuduSyncer.createOperation(after, before, payload);
                     operations.add(operation);
                     if (operations.size() >= kuduSyncer.getMaxBatchSize()) {
                         kuduSyncer.syncAndClear(operations);
