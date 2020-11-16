@@ -20,7 +20,6 @@ import personal.leo.debezium_to_kudu.mapper.po.TaskPO;
 import personal.leo.debezium_to_kudu.utils.CommonUtils;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static personal.leo.debezium_to_kudu.constants.WorkerConfig.*;
@@ -47,10 +46,8 @@ public class Worker {
             for (TaskPO taskPO : taskPOS) {
                 try {
                     assertOperationSuccess(() -> taskMapper.occupy(taskPO.getTask_id(), taskPO.getWorker(), CommonUtils.getThisServerId()));
-
                     tryRunTask(taskPO);
-
-                    TimeUnit.MILLISECONDS.sleep(500);//抢占成功后,sleep 一会儿,让其他worker抢占
+                    break;//为了公平获取,比较简单的实现方式
                 } catch (Exception e) {
                     log.error("occupyTask failed: ", e);
                 }
