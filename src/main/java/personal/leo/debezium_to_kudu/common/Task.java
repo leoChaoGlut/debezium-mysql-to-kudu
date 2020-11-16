@@ -93,7 +93,8 @@ public class Task {
 
     public static Task of(TaskPO taskPO) {
         final Task task = JSON.parseObject(taskPO.getJson(), Task.class);
-        task.setDatabaseServerId(taskPO.getTask_num());
+        task.setDatabaseServerId(taskPO.getTask_num())
+                .setKuduTableName(taskPO.getKudu_table_name());
         return task;
     }
 

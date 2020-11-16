@@ -56,5 +56,17 @@ public class TaskController {
         return "ok";
     }
 
+    @GetMapping("activate/all")
+    public String activateAll(String kuduTableName) {
+        assertOperationSuccess(() -> taskMapper.activateAll(kuduTableName));
+        return "ok";
+    }
+
+    @GetMapping("deactivate/all")
+    public String deactivateAll(String kuduTableName) {
+        assertOperationSuccess(() -> taskMapper.deactivateAll(kuduTableName));
+        return "ok";
+    }
+
 
 }

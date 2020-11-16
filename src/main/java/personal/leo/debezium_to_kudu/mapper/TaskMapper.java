@@ -7,8 +7,8 @@ import java.util.List;
 
 @Mapper
 public interface TaskMapper {
-    @Insert("insert into task(task_id, json)\n" +
-            "values (#{task_id}, #{json})\n")
+    @Insert("insert into task(task_id, json, kudu_table_name)\n" +
+            "values (#{task_id}, #{json}, #{kudu_table_name})\n")
     @Options(useGeneratedKeys = true, keyProperty = "task_num", keyColumn = "task_num")
     int insert(TaskPO taskPO);
 
@@ -78,4 +78,16 @@ public interface TaskMapper {
             "where task_id = #{taskId}"
     )
     int deactivate(@Param("taskId") String taskId);
+
+    @Update("update task\n" +
+            "set state = 'INACTIVE'\n" +
+            "where kudu_table_name = #{kuduTableName}"
+    )
+    int deactivateAll(@Param("kuduTableName") String kuduTableName);
+
+    @Update("update task\n" +
+            "set state = 'ACTIVE'\n" +
+            "where kudu_table_name = #{kuduTableName}"
+    )
+    int activateAll(@Param("kuduTableName") String kuduTableName);
 }

@@ -16,6 +16,7 @@ import java.util.Date;
 public class TaskPO {
     private int task_num;
     private String task_id;
+    private String kudu_table_name;
     private String json;
     private Date create_time;
     private Task.State state;
@@ -26,6 +27,7 @@ public class TaskPO {
         return new TaskPO()
                 .setTask_num(task.getDatabaseServerId())
                 .setTask_id(task.getDatabaseServerName())
+                .setKudu_table_name(task.getKuduTableName())
                 .setJson(JSON.toJSONString(task));
     }
 }
