@@ -191,9 +191,16 @@ public class KuduSyncer implements AutoCloseable {
 
         final List<OperationResponse> resps = session.flush();
         if (resps.size() > 0) {
-            OperationResponse resp = resps.get(0);
-            if (resp.hasRowError()) {
-                throw new RuntimeException("sync to kudu error:" + resp.getRowError());
+            for (OperationResponse resp : resps) {
+                if (resp.hasRowError()) {
+                    final RowError rowError = resp.getRowError();
+                    final Status errorStatus = rowError.getErrorStatus();
+                    if (errorStatus.isNotFound()) {
+                        log.error("ignore not found error: " + rowError);
+                    } else {
+                        throw new RuntimeException("sync to kudu error: " + rowError);
+                    }
+                }
             }
         }
         watch.stop();

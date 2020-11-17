@@ -118,5 +118,10 @@ public class CommonTest {
         TimeUnit.SECONDS.sleep(5);
     }
 
+    @Test
+    public void test3() throws InterruptedException {
+
+    }
+
 
 }
