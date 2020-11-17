@@ -30,7 +30,13 @@ public class MsgConsumer implements DebeziumEngine.ChangeConsumer<SourceRecord> 
         try {
             for (SourceRecord record : records) {
                 final Struct payload = (Struct) record.value();
+                if (payload == null) {
+                    continue;
+                }
                 final Struct source = payload.getStruct(PayloadKeys.source);
+                if (source == null) {
+                    continue;
+                }
                 final String srcTableId = source.getString(PayloadKeys.db) + DOT + source.getString(PayloadKeys.table);
                 final boolean accept = kuduSyncer.accept(srcTableId);
                 if (accept) {
